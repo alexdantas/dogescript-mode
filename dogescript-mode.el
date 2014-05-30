@@ -1,8 +1,8 @@
 ;;; dogescript-mode.el --- Dogescript editing mode
 
 ;; Author:           Alexandre Dantas <eu@alexdantas.net>
-;; URL:              https://github.com/alexdantas/djs-mode/
-;; Version:          20140114
+;; URL:              https://github.com/alexdantas/dogescript-mode/
+;; Version:          0.0.1
 ;; Keywords:         languages, dogescript
 ;; Package-Requires: ((emacs "24.1"))
 
@@ -19,9 +19,9 @@
 
 ;; Installation:
 ;;
-;; Place the following on your emacs config file:
+;; Load the file and lace the following on your emacs config file:
 
-;;   (add-to-list 'auto-mode-alist '("\\.djs\\'" . dogescript-mode))
+;;   (require 'dogescript-mode)
 
 ;; Notes:
 
@@ -33,10 +33,14 @@
 ;;    wow
 ;;          stahp plz
 
-;; Thanks a lot, Xah Lee!
-;; http://ergoemacs.org/emacs/elisp_syntax_coloring.html
+;; Thanks a lot:
+;; - http://emacs-fu.blogspot.com.br/2010/04/creating-custom-modes-easy-way-with.html
+;; - http://www.emacswiki.org/cgi-bin/wiki/GenericMode
+;; - http://ergoemacs.org/emacs/elisp_syntax_coloring.html
 
 ;;; Code:
+
+(require 'generic-x)
 
 ;; First, let's define a hook so users can attach code
 ;; when this mode is launched
@@ -47,93 +51,75 @@
 
   "Keymap for DOGESCRIPT major mode")
 
-;; Defining all keywords for the mode
-;; {{{
-(setq dogescript-keywords
-	  '("very" "is" "such" "much" "wow" "wow&" "plz"
-		"with" "rly" "but" "notrly" "many" "much"
-		"so" "as" "dose"))
-(setq dogescript-types
-	  '())
-(setq dogescript-constants
-	  '("dogeument" "windoge" "console"
-		"true" "false"))
-(setq dogescript-functions
-	  '("maybe" "trained"))
-;; }}}
+(define-generic-mode 'dogescript-mode
 
-;; Creating Regular Expressions for all the keywords above.
-;; They will only match the entire words.
-;; {{{
-(setq dogescript-keywords-regexp  (regexp-opt dogescript-keywords  'words))
-(setq dogescript-types-regexp     (regexp-opt dogescript-types     'words))
-(setq dogescript-constants-regexp (regexp-opt dogescript-constants 'words))
-(setq dogescript-functions-regexp (regexp-opt dogescript-functions 'words))
-;; }}}
+  ;; Starting delimiter for comments
+  '("shh ")
 
-;; Creating the lists for font-lock
-;; (thing that will actually color the keywords)
-;; Note that the order matters!
-;;
-;; Xah Lee says:
-;; "The `( ,a ,b …) is a lisp special syntax to evaluate parts of elements inside the list. Inside the paren, elements preceded by a , will be evaluated."
-;;
-;; {{{
-(setq dogescript-font-lock-keywords
-	  `(
-		(,dogescript-types-regexp     . font-lock-type-face)
-		(,dogescript-constants-regexp . font-lock-constant-face)
-		(,dogescript-functions-regexp . font-lock-function-name-face)
-		(,dogescript-keywords-regexp  . font-lock-keyword-face)))
-;; }}}
+  ;; Some keywords
+  '("very" "is" "such" "much" "wow" "wow&" "plz"
+	"with" "rly" "but" "notrly" "many" "much"
+	"so" "as" "dose")
 
-;; Command to comment/uncomment text
-;; {{{
-(defun dogescript-comment-dwim (arg)
-  "Comment or uncomment current line or region in a smart way.
-For detail, see `comment-dwim'."
-  (interactive "*P")
-  (require 'newcomment)
-  (let (
-		(comment-start "shh ") (comment-end "")
-		)
-	(comment-dwim arg)))
-;; }}}
+  ;; More keywords
+  ;; Note: First ones take precedence
+  '(
+	;; Strings (only type supported is '' - not "")
+	("\'.*\'" . 'font-lock-string-face)
 
-;; Syntax table
-(defvar dogescript-syntax-table nil "Syntax table for `dogescript-mode'.")
-(setq dogescript-syntax-table
-	  (let ((synTable (make-syntax-table)))
+	;; Operators
+	;; Note that they must be separate words
+	;; (thus the \\b)
+	;; {{{
 
-		;; bash style comment: “# …”
-		(modify-syntax-entry ?# "< b" synTable)
-		(modify-syntax-entry ?\n "> b" synTable)
+	("\\bis\\b"   . 'font-lock-builtin-face)
+	("\\band\\b"  . 'font-lock-builtin-face)
+	("\\bor\\b"   . 'font-lock-builtin-face)
+	("\\bnext\\b" . 'font-lock-builtin-face)
 
-		synTable))
+	;; Special negation operator
+	("\\bnot\\b"  . 'font-lock-negation-char-face)
 
-;; Defining the mode
-;; It inherits from Javascript mode.
-;; {{{
-(define-derived-mode dogescript-mode javascript-mode
-  "dogescript mode"
-  "Major mode for editing Dogescript source code."
+	;; }}}
 
-  ;; Code for syntax highlighting
-  (setq font-lock-defaults '((dogescript-font-lock-keywords)))
+	;; Built-ins
+	("\\bmaybe\\b"   . 'font-lock-builtin)
+	("\\btrained\\b" . 'font-lock-builtin)
+	("\\bmaybe\\b"   . 'font-lock-builtin)
 
-  ;; Clearing memory
-  ;; {{{
-  (setq dogescript-keywords  nil)
-  (setq dogescript-types     nil)
-  (setq dogescript-constants nil)
-  (setq dogescript-functions nil)
-  ;; }}}
+	;; Numbers are highlighted
+	("\\b[0-9]+\\b" . 'font-lock-variable-name-face)
 
-  (setq mode-name "dogescript")
+	;; Multi-line comments
+	;; {{{
 
-  (define-key dogescript-mode-map [remap comment-dwim] 'dogescript-comment-dwim)
+	;; Matching the comment boundaries (only full words)
+	("\\bquiet\\b" . 'font-lock-comment-delimiter-face)
+	("\\bloud\\b"  . 'font-lock-comment-delimiter-face)
+
+	;; Matching everything between the comment boundaries
+;	("\\bquiet\\b\\(.\\|\n\\)*\\bloud\\b" . 'font-lock-comment-face)
+
+	;; }}}
+	)
+
+  ;; File extensions for this mode
+  '("\\.djs$")
+
+  ;; Other functions to call
+  (list
+   (lambda ()
+	 ;; Forcing to insert spaces on this mode
+	 ;; (since Dogescript doesn't recognize TABs)
+	 (setq tab-width 4)
+	 (setq indent-tabs-mode nil)
+
+	 ;; Redundancy
+	 (setq comment-start "shh ")
+	 (setq comment-end   "")
+	 ))
+
+  ;; Doc string for this mode
+  "Major mode for editing Dogescript source code"
   )
-;; }}}
-
-(provide 'dogescript-mode)
 

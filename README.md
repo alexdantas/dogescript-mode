@@ -1,5 +1,7 @@
 # dogescript-mode
 
+![example](http://alexdantas.net/stuff/wp-content/uploads/2014/05/doge-js.png)
+
 Emacs major mode for editing [Dogescript source code][doge].
 
 # Usage
@@ -12,12 +14,13 @@ Perhaps someone could help he with this?
 
 # Installation
 
-Put the file `dogescript-mode.el` inside your `.emacs.d/` load path and add the following
-to your `.emacs` configuration file:
+Put the file `dogescript-mode.el` somewhere inside your `.emacs.d/` directory
+and simply add the following line to your `.emacs` configuration file:
 
-    (add-to-list 'auto-mode-alist '("\\.djs\\'" . dogescript-mode))
+    (load "~/.emacs.d/path/to/dogescript-mode.el")
 
-It will attach the dogescript mode to all files with the extension `.djs`.
+Now it will automatically launch `dogescript-mode` when you open files with the
+`.djs` extension.
 
 # License
 
